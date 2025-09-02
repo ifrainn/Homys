@@ -1,0 +1,7 @@
+﻿node_modules/
+.expo/
+.expo-shared/
+dist/
+build/
+android/
+ios/

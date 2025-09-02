@@ -1,0 +1,36 @@
+﻿# Dependencies & caches
+node_modules/
+.npm/
+.yarn/
+.pnpm-store/
+.expo/
+.expo-shared/
+.metro-cache/
+.gradle/
+.cache/
+tmp/
+temp/
+
+# Build artifacts
+dist/
+build/
+web-build/
+android/app/build/
+ios/build/
+
+# VCS & OS noise
+.git/
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+*.pid
+
+# Keep lockfiles (REQUIRED for EAS)
+!package-lock.json
+!yarn.lock
+!pnpm-lock.yaml

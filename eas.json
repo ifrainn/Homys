@@ -1,0 +1,12 @@
+{
+  "cli": {
+    "requireCommit": false,
+    "appVersionSource": "remote"
+  },
+  "build": {
+    "android-apk": {
+      "android": { "buildType": "apk" },
+      "env": { "EAS_USE_NPM_INSTALL": "1" }
+    }
+  }
+}

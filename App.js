@@ -1945,7 +1945,7 @@ const SummaryPill = ({ label, value, negative, bold }) => (
   <View style={[styles.pill, negative && styles.pillNegative]}>
     <Text style={[styles.pillLabel]}>{label}</Text>
     <Text style={[styles.pillValue, bold && { fontWeight: "800" }]}>
-      {negative ? "-" : ""}
+      {negative ? "" : ""}
       {Number(value || 0).toFixed(0)}
     </Text>
   </View>

@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "616268227395",
+    "project_id": "homeday-7b571",
+    "storage_bucket": "homeday-7b571.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:616268227395:android:541faa9d45ba51761605f6",
+        "android_client_info": {
+          "package_name": "com.frain.homeday"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "616268227395-p9srvisjsul965loqos40i6evb5cs5s2.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDjqhyhrRBK7oFN4n5n018dnFxp4iG1GPo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "616268227395-p9srvisjsul965loqos40i6evb5cs5s2.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "616268227395-cr0a7dqv65i2groprvpa6cdljnp85ftp.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.ffrain.Homeday"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -4,22 +4,19 @@
     "slug": "homys",
     "scheme": "homys",
     "version": "1.0.0",
-
     "icon": "./assets/iconHomys.png",
-
-    "assetBundlePatterns": ["**/*"],
-
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "splash": {
       "image": "./assets/iconHomys.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-
     "ios": {
       "bundleIdentifier": "com.frain.homys",
       "supportsTablet": false
     },
-
     "android": {
       "package": "com.frain.homys",
       "icon": "./assets/iconHomys.png",
@@ -29,14 +26,16 @@
       },
       "googleServicesFile": "./android/app/google-services.json"
     },
-
     "plugins": [
       "@react-native-firebase/app",
-      "@react-native-firebase/crashlytics"
+      "@react-native-firebase/crashlytics",
+      "expo-localization",
+      "expo-web-browser"
     ],
-
     "extra": {
-      "eas": { "projectId": "4804b7c2-274e-496a-bf80-93f00af7f593" }
+      "eas": {
+        "projectId": "4804b7c2-274e-496a-bf80-93f00af7f593"
+      }
     }
   }
 }

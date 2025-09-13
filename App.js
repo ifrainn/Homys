@@ -27,10 +27,13 @@ import {
   collection,
   deleteDoc,
   doc,
+  getDoc,
   getDocs,
   onSnapshot,
   query,
   updateDoc,
+  where,
+   runTransaction 
 } from "firebase/firestore";
 import { auth, db } from "./firebaseConfig";
 import AuthScreen from "./AuthScreen";
@@ -50,10 +53,12 @@ const pickDeviceLang = async()=> {
   }
 };
 
-const KEY_LANG = "Homeday.lang.v1";
+const KEY_LANG = "homys.lang.v1";
 
 const TR = {
   en: {
+     conflictMessage: (who, start, end, free) =>
+      `Already reserved by ${who} (${start} → ${end}). Free from ${free}.`,
     login: "Log in",
 signup: "Sign up",
 emailLabel: "Email",
@@ -114,7 +119,7 @@ emailRequired: "Email required",
     noteOptional: "Note (optional)",
     aboutTitle: "About",
     aboutText:
-      "Homeday helps you manage apartment reservations, occupancy and monthly earnings.",
+      "Homy’s helps you manage apartment reservations, occupancy and monthly earnings.",
     language: "Language",
     english: "English",
     french: "Français",
@@ -124,8 +129,20 @@ emailRequired: "Email required",
     invalidDates: "Invalid dates",
     invalidDatesBody: "End date must be the same as or after the start date.",
     arabic: "العربية",
+     emailOrPhoneLabel: "Email or phone",
+  phoneLabel: "Phone",
+  signupFailedTitle: "Signup failed",
+  errEmailInUse: "This email address is already in use",
+  errNoEmailLinked: "No email linked to this phone number",
   },
   fr: {
+    signupFailedTitle: "Échec de l'inscription",
+  errEmailInUse: "Cette adresse email est déjà utilisée",
+  emailOrPhoneLabel: "Email ou téléphone",
+  phoneLabel: "Téléphone",
+
+    conflictMessage: (who, start, end, free) =>
+      `Déjà réservé par ${who} (${start} → ${end}). Libre à partir du ${free}.`,
     login: "Se connecter",
 signup: "Créer un compte",
 emailLabel: "Email",
@@ -189,7 +206,7 @@ emailRequired: "Email requis",
     noteOptional: "Note (optionnel)",
     aboutTitle: "À propos",
     aboutText:
-      "Homeday vous aide à gérer les réservations, l’occupation et les revenus mensuels.",
+      "Homy’s vous aide à gérer les réservations, l’occupation et les revenus mensuels.",
     language: "Langue",
     english: "English",
     french: "Français",
@@ -204,8 +221,16 @@ checkSpamBody: "Si vous ne trouvez pas l’e-mail, regardez dans Spam/Promotions
 resendEmail: "Renvoyer l’e-mail",
 resendIn: (s) => `Renvoyer dans ${s}s`,
 openMailApp: "Ouvrir ma messagerie",
+errNoEmailLinked: "Aucun email lié à ce numéro de téléphone",
   },
   ar: {
+     signupFailedTitle: "فشل التسجيل",
+  errEmailInUse: "هذا البريد الإلكتروني مستخدم بالفعل",
+errNoEmailLinked: "لا يوجد بريد إلكتروني مرتبط بهذا الرقم",
+     emailOrPhoneLabel: "البريد الإلكتروني أو الهاتف",
+  phoneLabel: "الهاتف",
+    conflictMessage: (who, start, end, free) =>
+      `محجوز بالفعل من طرف ${who} (${start} → ${end}). سيكون متاحًا ابتداءً من ${free}.`,
     login: "تسجيل الدخول",
 signup: "إنشاء حساب",
 emailLabel: "البريد الإلكتروني",
@@ -266,7 +291,7 @@ emailRequired: "البريد الإلكتروني مطلوب",
     amount: "المبلغ",
     noteOptional: "ملاحظة (اختياري)",
     aboutTitle: "حول",
-    aboutText: "يساعدك HomeDay على إدارة حجوزات الشقق، الإشغال، والأرباح الشهرية.  ",
+    aboutText: "يساعدك Homy’s على إدارة حجوزات الشقق، الإشغال، والأرباح الشهرية.  ",
     language: "اللغة",
     english: "English",
     french: "Français",
@@ -280,9 +305,9 @@ emailRequired: "البريد الإلكتروني مطلوب",
 };
 
 /** Storage keys (used only for one-time migration) */
-const KEY_APTS = "Homeday.apartments.v2"; // v2: adds pricePerDay
-const KEY_RES = "Homeday.reservations.v1";
-const KEY_CHARGES = "Homeday.charges.v1"; // { [aptId]: Array<{id,date,amount,note}> }
+const KEY_APTS = "homys.apartments.v2"; // v2: adds pricePerDay
+const KEY_RES = "homys.reservations.v1";
+const KEY_CHARGES = "homys.charges.v1"; // { [aptId]: Array<{id,date,amount,note}> }
 
 /** Sizing (fixed heights keep rows aligned) */
 const NAME_COL_WIDTH = 88; // fixed left column
@@ -346,7 +371,14 @@ const daysInMonthArr = (d) => {
     out.push(dateOnly(x));
   return out;
 };
-
+// ---- shared helpers used across the file ----
+const toMidnightTs = (d) => {
+  const x = new Date(d);
+ x.setHours(0, 0, 0, 0);
+  return +x;
+};
+const rangesOverlapIncl = (aStart, aEnd, bStart, bEnd) =>
+  !(aEnd < bStart || aStart > bEnd);
 
 /* --------------------------- Root: Auth + Loading -------------------------- */
 export default function App() {
@@ -695,6 +727,8 @@ const [showIOSCharge, setShowIOSCharge] = useState(false);
   const getCellState = useCallback(
     (aptId, day) => {
       const list = reservations[aptId] || [];
+
+
       let hit = null;
       for (const r of list) {
         if (inRangeInclusive(day, r.start, r.end)) {
@@ -790,52 +824,134 @@ const [showIOSCharge, setShowIOSCharge] = useState(false);
 
     await deleteDoc(doc(db, "users", user.uid, "apartments", aptId));
   };
+// Returns true if any reservation overlaps [start..end] in this apt (optionally excluding one doc id)
+// Finds any overlapping reservation in Firestore. Returns details if found.
+const findServerConflict = async (uid, aptId, start, end, excludeId) => {
+  const resCol = collection(db, "users", uid, "apartments", aptId, "reservations");
 
-  const fsCreateReservation = async (aptId, r) => {
-    const resRef = collection(
-      db,
-      "users",
-      user.uid,
-      "apartments",
-      aptId,
-      "reservations"
-    );
-    await addDoc(resRef, {
-      start: +dateOnly(r.start),
-      end: +dateOnly(r.end),
-      status: r.status,
-      guestName: (r.guestName || "").trim(),
-      phone: (r.phone || "").trim(),
-      cin: (r.cin || "").trim().toUpperCase(),
-      pricePerDay: Number.isFinite(r.pricePerDay) ? r.pricePerDay : null,
-      notes: (r.notes || "").trim(),
-      createdAt: Date.now(),
-    });
-  };
+  const startTs = toMidnightTs(start);
+  const endTs   = toMidnightTs(end);
+
+  // Firestore limitation: only one range on a field → fetch "start <= endTs"
+  const q1 = query(resCol, where("start", "<=", endTs));
+  const snap = await getDocs(q1);
+
+  let hit = null;
+  snap.docs.forEach((d) => {
+    if (excludeId && d.id === excludeId) return;
+    const data = d.data();
+    const bStart = Number(data.start);
+    const bEnd   = Number(data.end);
+
+    if (rangesOverlapIncl(startTs, endTs, bStart, bEnd)) {
+      // prefer OCCUPIED over RESERVED; otherwise earliest start
+      if (
+        !hit ||
+        (data.status === STATUS.OCCUPIED && hit.status !== STATUS.OCCUPIED) ||
+        bStart < hit.start
+      ) {
+        hit = { id: d.id, ...data };
+      }
+    }
+  });
+
+  if (!hit) {
+    return { exists: false, res: null };
+  }
+
+  // next free day is the day after the conflict ends
+  const freeFrom = toMidnightTs(Number(hit.end) + 24 * 60 * 60 * 1000);
+
+  return { exists: true, res: hit, freeFrom };
+};
+
+  // Create with overlap protection
+const fsCreateReservation = async (
+  aptId,
+  { start, end, status, guestName, phone, cin, pricePerDay, notes }
+) => {
+  const resCol = collection(db, "users", user.uid, "apartments", aptId, "reservations");
+  const startTs = toMidnightTs(start);
+  const endTs   = toMidnightTs(end);
+
+  // server-side check with details
+  const conflict = await findServerConflict(user.uid, aptId, startTs, endTs, null);
+  if (conflict.exists) {
+    const c = conflict.res;
+    const who = c.guestName?.trim() || t("reserved"); // fallback
+    const when =
+      `${fmtDateLong(new Date(Number(c.start)), locale)} → ` +
+      `${fmtDateLong(new Date(Number(c.end)), locale)}`;
+    const freeFromText = fmtDateLong(new Date(conflict.freeFrom), locale);
+
+    throw new Error(
+TR[lang].conflictMessage(
+    who,
+    fmtDateLong(new Date(Number(c.start)), locale),
+    fmtDateLong(new Date(Number(c.end)), locale),
+    freeFromText
+  )    );
+  }
+
+  await addDoc(resCol, {
+    start: startTs,
+    end: endTs,
+    status,
+    guestName: (guestName || "").trim(),
+    phone: (phone || "").trim(),
+    cin: (cin || "").trim().toUpperCase(),
+    pricePerDay: Number.isFinite(pricePerDay) ? pricePerDay : null,
+    notes: (notes || "").trim(),
+    createdAt: Date.now(),
+  });
+};
+
 
   const fsUpdateReservation = async (aptId, resId, patch) => {
-    // Never pass undefined to Firestore
-    const shaped = {
-      ...(patch.start ? { start: +dateOnly(patch.start) } : {}),
-      ...(patch.end ? { end: +dateOnly(patch.end) } : {}),
-      ...(patch.status ? { status: patch.status } : {}),
-      ...(patch.guestName != null ? { guestName: patch.guestName } : {}),
-      ...(patch.phone != null ? { phone: patch.phone } : {}),
-      ...(patch.cin != null ? { cin: patch.cin } : {}),
-      ...(patch.pricePerDay !== undefined
-        ? {
-            pricePerDay: Number.isFinite(patch.pricePerDay)
-              ? patch.pricePerDay
-              : null,
-          }
-        : {}),
-      ...(patch.notes != null ? { notes: patch.notes } : {}),
-    };
-    await updateDoc(
-      doc(db, "users", user.uid, "apartments", aptId, "reservations", resId),
-      shaped
-    );
+      const resRef = doc(db, "users", user.uid, "apartments", aptId, "reservations", resId);
+
+  // shape the patch
+  const shaped = {
+    ...(patch.start ? { start: toMidnightTs(patch.start) } : {}),
+    ...(patch.end ? { end: toMidnightTs(patch.end) } : {}),
+    ...(patch.status ? { status: patch.status } : {}),
+    ...(patch.guestName != null ? { guestName: patch.guestName } : {}),
+    ...(patch.phone != null ? { phone: patch.phone } : {}),
+    ...(patch.cin != null ? { cin: patch.cin } : {}),
+    ...(patch.pricePerDay !== undefined
+      ? { pricePerDay: Number.isFinite(patch.pricePerDay) ? patch.pricePerDay : null }
+      : {}),
+    ...(patch.notes != null ? { notes: patch.notes } : {}),
   };
+
+  // get current doc (to know the full range to validate)
+ const curSnap = await getDoc(resRef);
+  const current = curSnap.data() || {};
+  // final range we will store
+  const finalStart = shaped.start ?? toMidnightTs(current.start);
+  const finalEnd   = shaped.end   ?? toMidnightTs(current.end);
+
+  // conflict check (exclude this doc)
+ const conflict = await findServerConflict(user.uid, aptId, finalStart, finalEnd, resId);
+ if (conflict.exists) {
+   const c = conflict.res;
+   const who = c.guestName?.trim() || t("reserved");
+   const when =
+   `${fmtDateLong(new Date(Number(c.start)), locale)} → ` +
+     `${fmtDateLong(new Date(Number(c.end)), locale)}`;
+   const freeFromText = fmtDateLong(new Date(conflict.freeFrom), locale);
+   throw new Error(
+ TR[lang].conflictMessage(
+     who,
+     fmtDateLong(new Date(Number(c.start)), locale),
+     fmtDateLong(new Date(Number(c.end)), locale),
+     freeFromText
+   )   );
+ }
+
+  await updateDoc(resRef, shaped);
+};
+
 
   const fsDeleteReservation = async (aptId, resId) => {
     await deleteDoc(
@@ -1133,7 +1249,7 @@ const confirmDeleteCharge = (chargeId) => {
         })}
       </View>
     ),
-    [apartments, getCellState]
+    [apartments, getCellState, dayColWidth, t, openCreateOrEdit]
   );
 
   const getItemLayout = useCallback(
@@ -1270,8 +1386,8 @@ const confirmDeleteCharge = (chargeId) => {
               >
                 <Text style={styles.secondaryBtnText}>{t("prev")}</Text>
               </TouchableOpacity>
-              <Text style={styles.monthTitle}>{fmtMonthYear(monthCursor)}</Text>
-              <TouchableOpacity
+                <Text style={styles.monthTitle}>{fmtMonthYear(monthCursor, locale)}</Text>
+                <TouchableOpacity
                 style={styles.secondaryBtn}
                 onPress={() =>
                   setMonthCursor((prev) => {
@@ -1588,7 +1704,7 @@ const confirmDeleteCharge = (chargeId) => {
  {/* ===== Charges Manager Modal ===== */}
 {/* ===== Charges Manager Modal ===== */}
 <Modal
-  visible={chargesManagerOpen}
+   visible={chargesManagerOpen && !addChargeOpen}
   animationType="slide"
   transparent
   presentationStyle="overFullScreen"
@@ -1621,7 +1737,10 @@ const confirmDeleteCharge = (chargeId) => {
       setAddChargeForm({ date: dateOnly(new Date()), amount: "", note: "" });
       setShowIOSChargeAdd(false);
       setShowChargeAddPicker(false);
-      setAddChargeOpen(true);
+      //setAddChargeOpen(true);
+      setChargesManagerOpen(false);
+      setTimeout(() => setAddChargeOpen(true), 0);
+
     }}
   >
     <Text style={styles.primaryBtnText}>{t("addCharge")}</Text>
@@ -1837,6 +1956,7 @@ const confirmDeleteCharge = (chargeId) => {
             setShowIOSChargeAdd(false);
             setShowChargeAddPicker(false);
             setAddChargeOpen(false);
+            setTimeout(() => setChargesManagerOpen(true), 0);
           }}
         >
           <Text style={styles.secondaryBtnText}>{t("cancel")}</Text>
@@ -1856,6 +1976,7 @@ const confirmDeleteCharge = (chargeId) => {
               setShowIOSChargeAdd(false);
               setShowChargeAddPicker(false);
               setAddChargeOpen(false);
+              setTimeout(() => setChargesManagerOpen(true), 0);
             } catch (e) {
               Alert.alert("Error", (e?.message || "").toString());
             }

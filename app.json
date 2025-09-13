@@ -1,30 +1,30 @@
 {
   "expo": {
-    "name": "Homeday",
-    "slug": "homeday",
+    "name": "Homys",
+    "slug": "homys",
+    "scheme": "homys",
     "version": "1.0.0",
-    "scheme": "homeday",
 
-    "icon": "./assets/iconHomeday.png",
+    "icon": "./assets/iconHomys.png",
 
     "assetBundlePatterns": ["**/*"],
 
     "splash": {
-      "image": "./assets/iconHomeday.png",
+      "image": "./assets/iconHomys.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
 
     "ios": {
-      "bundleIdentifier": "com.frain.homeday",
+      "bundleIdentifier": "com.frain.homys",
       "supportsTablet": false
     },
 
     "android": {
-      "package": "com.frain.homeday",
-      "icon": "./assets/iconHomeday.png",
+      "package": "com.frain.homys",
+      "icon": "./assets/iconHomys.png",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/iconHomeday.png",
+        "foregroundImage": "./assets/iconHomys.png",
         "backgroundColor": "#ffffff"
       },
       "googleServicesFile": "./android/app/google-services.json"

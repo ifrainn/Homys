@@ -10,3 +10,9 @@ ios/
 !android/
 !android/app/
 !android/app/google-services.json
+
+!android/
+
+!android/app/
+
+!android/app/google-services.json

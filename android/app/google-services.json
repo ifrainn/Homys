@@ -9,7 +9,7 @@
       "client_info": {
         "mobilesdk_app_id": "1:616268227395:android:541faa9d45ba51761605f6",
         "android_client_info": {
-          "package_name": "com.frain.homeday"
+          "package_name": "com.frain.homys"
         }
       },
       "oauth_client": [
@@ -34,7 +34,7 @@
               "client_id": "616268227395-cr0a7dqv65i2groprvpa6cdljnp85ftp.apps.googleusercontent.com",
               "client_type": 2,
               "ios_info": {
-                "bundle_id": "com.ffrain.Homeday"
+                "bundle_id": "com.ffrain.Homys"
               }
             }
           ]

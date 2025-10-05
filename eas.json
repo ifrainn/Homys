@@ -2,8 +2,7 @@
   "cli": { "version": ">= 10.0.0" },
   "build": {
     "production": {
-      "android": { "buildType": "app-bundle" },
-      "node": "lts"
+      "android": { "buildType": "app-bundle" }
       
     },
     "android-apk": {

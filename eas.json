@@ -3,7 +3,7 @@
   "build": {
     "production": {
       "android": { "buildType": "app-bundle" },
-      "node": "18.x"
+      "node": "18"
       
     },
     "android-apk": {

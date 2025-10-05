@@ -9,10 +9,8 @@ ios/
 # allow google-services.json to be tracked even though android/ is ignored
 !android/
 !android/app/
-!android/app/google-services.json
 
 !android/
 
 !android/app/
 
-!android/app/google-services.json

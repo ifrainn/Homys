@@ -89,6 +89,7 @@ emailRequired: "Email required",
     today: "Today",
     historyOn: "History ON",
     historyOff: "History OFF",
+    nightsLabel: (n) => (n === 1 ? "1 night" : `${n} nights`),
     free: "Free",
     reserved: "Reserved",
     occupied: "Occupied",
@@ -137,6 +138,9 @@ emailRequired: "Email required",
   },
   fr: {
     signupFailedTitle: "Échec de l'inscription",
+    // --- Add inside TR.fr ---
+nightsLabel: (n) => (n === 1 ? "1 nuit" : `${n} nuits`),
+
   errEmailInUse: "Cette adresse email est déjà utilisée",
   emailOrPhoneLabel: "Email ou téléphone",
   phoneLabel: "Téléphone",
@@ -238,6 +242,9 @@ passwordLabel: "كلمة المرور",
 show: "إظهار",
 hide: "إخفاء",
 or: "أو",
+// --- Add inside TR.ar ---
+nightsLabel: (n) => (n === 1 ? "ليلة واحدة" : `${n} ليالٍ`),
+
 continueWithGoogle: "المتابعة باستخدام Google",
 createAccountCta: "لا تملك حسابًا؟ أنشئ واحدًا",
 haveAccountCta: "لديك حساب؟ سجّل الدخول",
@@ -553,7 +560,12 @@ const [showIOSCharge, setShowIOSCharge] = useState(false);
     pricePerDay: "",
     notes: "",
   });
-
+const nights = useMemo(() => {
+  const s = +dateOnly(form.start);
+  const e = +dateOnly(form.end);
+  const diffDays = Math.round((e - s) / (1000 * 60 * 60 * 24));
+  return Math.max(1, diffDays + 1);
+}, [form.start, form.end]);
   const [showStartPicker, setShowStartPicker] = useState(false); // Android only
   const [showEndPicker, setShowEndPicker] = useState(false); // Android only
 
@@ -1517,7 +1529,7 @@ const confirmDeleteCharge = (chargeId) => {
                   else setShowStartPicker(true);
                 }}
               >
-                <Text style={styles.dateBtnText}>{fmtDateLong(form.start)}</Text>
+                <Text style={styles.dateBtnText}>{fmtDateLong(form.end, locale)}</Text>
               </Pressable>
               {Platform.OS === "ios" && showIOSStart && (
   <View style={styles.pickerWrap}>
@@ -1527,10 +1539,13 @@ const confirmDeleteCharge = (chargeId) => {
       display="inline"
       themeVariant="light"         // iOS 14+; falls back internally
       onChange={(event, d) => {
-        if (d) setForm((f) => ({ ...f, start: dateOnly(d) }));
-         //if (event?.type !== "dismissed") {
-         // requestAnimationFrame(() => setShowIOSEnd(false));
-        //}
+       if (d) {
+      const start = dateOnly(d);
+      setForm((f) => {
+        const end = +dateOnly(f.end) < +start ? start : f.end;
+        return { ...f, start, end };
+      });
+    }
         setShowIOSStart(false)
       }}
     />
@@ -1545,8 +1560,9 @@ const confirmDeleteCharge = (chargeId) => {
                   else setShowEndPicker(true);
                 }}
               >
-                <Text style={styles.dateBtnText}>{fmtDateLong(form.end)}</Text>
-              </Pressable>
+              <Text style={styles.dateBtnText}> {fmtDateLong(form.end, locale)} </Text>
+        </Pressable>
+<Text>{TR[lang].nightsLabel(nights)}</Text>
               {Platform.OS === "ios" && showIOSEnd && (
   <View style={styles.pickerWrap}>
     <DateTimePicker
@@ -1555,10 +1571,14 @@ const confirmDeleteCharge = (chargeId) => {
       display="inline"
       themeVariant="light"
       onChange={(event, d) => {
-        if (d) setForm((f) => ({ ...f, end: dateOnly(d) }));
-        //if (event?.type !== "dismissed") {
-         // requestAnimationFrame(() => setShowIOSEnd(false));
-        //}
+        if (d) {
+      const end = dateOnly(d);
+      setForm((f) => {
+        const start = dateOnly(f.start);
+        const fixedEnd = +end < +start ? start : end;
+        return { ...f, end: fixedEnd };
+      });
+    }
         setShowIOSEnd(false)
       }}
     />
@@ -1641,29 +1661,43 @@ const confirmDeleteCharge = (chargeId) => {
       {/* ===== Android inline pickers (Reservation) ===== */}
       {Platform.OS !== "ios" && showStartPicker && (
         <View style={styles.pickerWrap}>
-          <DateTimePicker
-            value={form.start}
-            mode="date"
-            display="inline"
-            themeVariant="light"
-            onChange={(_, d) => {
-              setShowStartPicker(false);
-              if (d) setForm((f) => ({ ...f, start: dateOnly(d) }));
-            }}
-          />
+         <DateTimePicker
+  value={form.start}
+  mode="date"
+  display="inline"
+  themeVariant="light"
+  onChange={(_, d) => {
+    setShowStartPicker(false);
+    if (d) {
+      const start = dateOnly(d);
+      setForm((f) => {
+        const end = +dateOnly(f.end) < +start ? start : f.end;
+        return { ...f, start, end };
+      });
+    }
+  }}
+/>
         </View>
       )}
       {Platform.OS !== "ios" && showEndPicker && (
         <View style={styles.pickerWrap}>
           <DateTimePicker
-            value={form.end}
-            mode="date"
-            display="inline"
-            onChange={(_, d) => {
-              setShowEndPicker(false);
-              if (d) setForm((f) => ({ ...f, end: dateOnly(d) }));
-            }}
-          />
+  value={form.end}
+  mode="date"
+  display="inline"
+  onChange={(_, d) => {
+    setShowEndPicker(false);
+    if (d) {
+      const end = dateOnly(d);
+      setForm((f) => {
+        const start = dateOnly(f.start);
+        const fixedEnd = +end < +start ? start : end;
+        return { ...f, end: fixedEnd };
+      });
+    }
+  }}
+/>
+
         </View>
       )}
 

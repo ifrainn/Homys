@@ -1,12 +1,17 @@
 {
-  "cli": {
-    "requireCommit": false,
-    "appVersionSource": "remote"
-  },
+  "cli": { "version": ">= 10.0.0" },
   "build": {
+    "production": {
+      "android": { "buildType": "app-bundle" }   
+    },
     "android-apk": {
-      "android": { "buildType": "apk" },
-      "env": { "EAS_USE_NPM_INSTALL": "1" }
+      "distribution": "internal",
+      "android": { "buildType": "apk" }        
+    }
+  },
+  "submit": {
+    "production": {
+      "android": { "track": "internal" }        
     }
   }
 }

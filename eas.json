@@ -3,9 +3,8 @@
   "build": {
     "production": {
       "android": { "buildType": "app-bundle" },
-      "env": {
+      "secrets": {
         "GOOGLE_SERVICES_JSON": {
-          "value": "@GOOGLE_SERVICES_JSON", 
           "type": "file",
           "targetPath": "android/app/google-services.json" 
         }
@@ -13,12 +12,12 @@
     },
     "android-apk": {
       "distribution": "internal",
-      "android": { "buildType": "apk" }
+      "android": { "buildType": "apk" } 
     }
   },
   "submit": {
     "production": {
-      "android": { "track": "internal" }
+      "android": { "track": "internal" } 
     }
   }
 }

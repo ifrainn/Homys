@@ -19,6 +19,7 @@
     },
     "android": {
       "package": "com.frain.homys",
+       "buildToolsVersion": "34.0.0",
       "icon": "./assets/iconHomys.png",
       "adaptiveIcon": {
         "foregroundImage": "./assets/iconHomys.png",
@@ -26,6 +27,7 @@
       }
     },
     "plugins": [
+      "expo-build-properties",
       "@react-native-firebase/app",
       "@react-native-firebase/crashlytics",
       "expo-localization",

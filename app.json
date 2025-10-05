@@ -19,7 +19,6 @@
     },
     "android": {
       "package": "com.frain.homys",
-       "buildToolsVersion": "34.0.0",
        "googleServicesFile": "./android/app/google-services.json",
       "icon": "./assets/iconHomys.png",
       "adaptiveIcon": {
@@ -29,7 +28,12 @@
     },
     "plugins": [
       "expo-build-properties",
-      "@react-native-firebase/app",
+      [
+        "@react-native-firebase/app",
+        {
+          "googleServicesFile": "android/app/google-services.json"
+        }
+      ],
       "@react-native-firebase/crashlytics",
       "expo-localization",
       "expo-web-browser"

@@ -3,10 +3,11 @@
   "build": {
     "production": {
       "android": { "buildType": "app-bundle" },
-      "secrets": {
+      "env": {
         "GOOGLE_SERVICES_JSON": {
+          "value": "@GOOGLE_SERVICES_JSON",
           "type": "file",
-          "targetPath": "android/app/google-services.json" 
+          "targetPath": "android/app/google-services.json"
         }
       }
     },

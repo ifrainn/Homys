@@ -2,24 +2,16 @@
   "cli": { "version": ">= 10.0.0" },
   "build": {
     "production": {
-      "android": { 
-        "buildType": "app-bundle" 
-      },
-      "secrets": {
-        "GOOGLE_SERVICES_JSON": {
-          "type": "file",
-          "targetPath": "android/app/google-services.json" 
-        }
-      }
+      "android": { "buildType": "app-bundle" }
     },
     "android-apk": {
       "distribution": "internal",
-      "android": { "buildType": "apk" } 
+      "android": { "buildType": "apk" }
     }
   },
   "submit": {
     "production": {
-      "android": { "track": "internal" }
+      "android": { "track": "internal" } 
     }
   }
 }
